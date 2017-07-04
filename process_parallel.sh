@@ -61,11 +61,13 @@ check_file_exists $TC_MODEL.${SOURCE_EXT}
 check_file_exists $TC_MODEL.${TARGET_EXT}
 
 TOOLS_DIR=tools
+CORPUS_NAME=`basename $CORPUS`
 
 ##############################################
 
 mkdir -p ${PROC_DATA_DIR}
 mkdir -p ${MODEL_DIR}
+mkdir -p ${OUTPUT_DIR}
 
 ##############################################
 
