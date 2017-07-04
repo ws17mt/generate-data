@@ -1,0 +1,4 @@
+tokenizer.perl -a -l en < dev.en > dev.tok.en
+truecase.perl -model truecase-model.en < dev.tok.en > dev.tc.en
+clean-corpus-n.perl train.tc fr en train.clean 1 80
+apply_bpe.py -c fren.bpe < train.tc.fr > train.bpe.fr
