@@ -14,7 +14,8 @@ MODEL_DIR=model/fr
 # Max BPE splits
 BPE_OPERATIONS=89500
 # The monolingual datasets
-MONO="newstest2008-13"
+MONO="news.2007-13"
+THREADS_PER_L=12
 
 ##############################################
 
@@ -24,9 +25,10 @@ mkdir -p ${MODEL_DIR}
 ##############################################
 
 for l in fr en; do
+  (
   # Tokenize
   echo "*** Tokenizing mono.${l}"
-  ${TOOLS_DIR}/tokenizer.perl -a -l $l \
+  ${TOOLS_DIR}/tokenizer.perl -a -l $l -threads ${THREADS_PER_L}\
     < ${RAW_DATA_DIR}/${MONO}.${l} \
     > ${PROC_DATA_DIR}/mono.tok.${l}
 
@@ -42,7 +44,10 @@ for l in fr en; do
     -model ${MODEL_DIR}/truecase-model.${l} \
     < ${PROC_DATA_DIR}/mono.tok.${l} \
     > ${PROC_DATA_DIR}/mono.tc.${l}
+  )&
 done
+
+wait;
 
 echo "*** Learning BPE model"
 # BPE (train)
