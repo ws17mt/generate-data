@@ -65,7 +65,6 @@ CORPUS_NAME=`basename $CORPUS`
 
 ##############################################
 
-mkdir -p ${PROC_DATA_DIR}
 mkdir -p ${MODEL_DIR}
 mkdir -p ${OUTPUT_DIR}
 
@@ -95,7 +94,7 @@ for l in $SOURCE_EXT $TARGET_EXT; do
   ${TOOLS_DIR}/truecase.perl \
     -model ${TC_MODEL}.${l} \
     < ${OUTPUT_DIR}/${CORPUS_NAME}.clean.${l} \
-    > ${PROC_DATA_DIR}/${CORPUS_NAME}.tc.${l}
+    > ${OUTPUT_DIR}/${CORPUS_NAME}.tc.${l}
 
   # BPE (apply)
   echo "*** Applying BPE to mono.${l}"
