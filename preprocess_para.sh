@@ -12,7 +12,7 @@ indev=/pylon2/ci560op/gkumar6/code/generate-data/data/fr_dev
 outdata=/pylon2/ci560op/fosterg/data/fr/processed
 
 # models
-bpe_model=/pylon2/ci560op/gkumar6/code/generate-data/model/fr/enfr.30000.bpe
+bpe_model=/pylon2/ci560op/gkumar6/code/generate-data/model/fr/fren.30000.bpe
 tc_model=/pylon2/ci560op/gkumar6/code/generate-data/model/fr/truecase-model
 
 # vars
