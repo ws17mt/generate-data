@@ -7,7 +7,7 @@
 
 # relevant directories
 scripts=tools
-indata=/pylon2/ci560op/gkumar6/code/genearte-data/data/fr_train
+indata=/pylon2/ci560op/gkumar6/code/generate-data/data/fr_train
 indev=/pylon2/ci560op/gkumar6/code/generate-data/data/fr_dev
 outdata=/pylon2/ci560op/fosterg/data/fr/processed
 
@@ -24,7 +24,7 @@ for size in 10k 100k 1m 2m full
  do 
   # preprocess
   echo "Preprocessing $size data"
-  $scripts/preprocess.sh $indata/train.$size $outdata/train.$size $src $trg $tc_model_prefix
+  $scripts/preprocess.sh $indata/train.$size $outdata/train.$size $src $trg $tc_model
   # apply BPE
   echo "Applying BPE (mono 30k)"
   $scripts/apply_bpe.sh $bpe_model $outdata/train.$size.tc.$src $outdata/train.$size.bpe.$src
