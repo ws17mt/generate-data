@@ -9,7 +9,7 @@ if test "$#" -ne 3; then
  exit -1
 fi
 
-scripts=./
+scripts=tools
 
 bpe_model=$1
 infile=$2
