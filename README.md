@@ -1,4 +1,8 @@
-### Data generation and processing scripts for fr-en
+### Data generation and processing scripts for parallel data at JSALT NMT workshop
+
+These scripts regenerate the data used in the JSALT experiments
+
+### English-French
 
 1. The TC and BPE models are trained on the mono corpora. (Use process_mono.sh)
 2. These are then applied to the respective parallel datasets. (Use process_parallel.sh)i
@@ -15,3 +19,20 @@
 
 ### Processing parallel data once BPE is chosen (30k, monolingual)
 TODO
+
+### English-Farsi
+
+We use the following parallel corpora:
+1. LDC News
+2. LDC "found" (mostly News)
+3. TED talks
+
+Additionally, we also use the following monolingual corpora:
+1. English: concatenation of News corpora (TODO: check what exactly is in this corpus)
+2. Farsi: Hamshahri corpus (News)
+
+For English, we use Moses for tokenization and truecasing, plus the BPE tool
+For Farsi, we use hazm for tokenization and normalization, plus the BPE tool (there is no lettercasing in Farsi)
+Hazm is available via pip:
+
+pip install hazm
