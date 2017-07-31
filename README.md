@@ -37,7 +37,9 @@ For Farsi, we use hazm for tokenization and normalization, plus the BPE tool (th
 Hazm is available via pip:
 
 pip install hazm
-=======
+
+
+
 1. preprocess_para.sh to preprocess parallel training, dev, and test sets
 2. process_mono.sh to apply BPE to the monolingual sets
 

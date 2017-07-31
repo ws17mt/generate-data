@@ -15,7 +15,7 @@ export EN_FA_DIR=/pylon2/ci560op/fosterg/data/fa
 export LDC_NEWS_EN=$EN_FA_DIR/parallel/ldc/en/ldc-news-eng.txt
 export LDC_FOUND_EN=$EN_FA_DIR/parallel/ldc/en/ldc-found-eng.txt
 export TED_EN=$EN_FA_DIR/parallel/ted/en/ted2013.en-fa.txt
-export MONO_EN=/pylon2/ci560op/gkumar6/code/generate-data/fr/mono.tc.en
+export MONO_EN=/pylon2/ci560op/gkumar6/code/generate-data/data/fr/mono.tc.en
 
 export LDC_NEWS_FA=$EN_FA_DIR/parallel/ldc/fa/ldc-news-fas.txt
 export LDC_FOUND_FA=$EN_FA_DIR/parallel/ldc/fa/ldc-found-fas.txt
@@ -24,10 +24,13 @@ export MONO_FA=$EN_FA_DIR/monolingual/hamshahri1/hamshahri1.txt
 
 export OUTPUT_DIR=$EN_FA_DIR/processed
 export TMP_DIR=$EN_FA_DIR/tmp
+mkdir -p $OUTPUT_DIR
 mkdir -p $TMP_DIR
+
 
 # We also have to inform the place for preprocessing scripts and other vars
 export SCRIPTS_DIR=/pylon2/ci560op/acurrey/data/scripts
+export APPLY_BPE=/pylon2/ci560op/fosterg/bin/apply_bpe.py
 export BPE_OPS=30000
 export EN_TC_MODEL=/pylon2/ci560op/gkumar6/code/generate-data/model/fr
 export SEED=$LDC_NEWS_EN
@@ -81,7 +84,7 @@ fi
 
 if [ "$2" == "y" ]; then
     echo "Applying BPE to the mono English data"
-    $SCRIPTS_DIR/apply_bpe.py -c $OUTPUT_DIR/en.bpe.model < $EN_MONO > $OUTPUT_DIR/mono.bpe.en
+    $APPLY_BPE -c $OUTPUT_DIR/en.bpe.model < $MONO_EN > $OUTPUT_DIR/mono.bpe.en
 fi
 
 #############################################
@@ -101,7 +104,7 @@ fi
 
 if [ "$4" == "y" ]; then
     echo "Applying BPE to the mono Farsi data"
-    $SCRIPTS_DIR/apply_bpe.py -c $OUTPUT_DIR/fa.bpe.model < $TMP_DIR/hamshahri.txt.tok > $OUTPUT_DIR/mono.bpe.fa
+    $APPLY_BPE -c $OUTPUT_DIR/fa.bpe.model < $TMP_DIR/hamshahri.txt.tok > $OUTPUT_DIR/mono.bpe.fa
 fi
 
 #############################################

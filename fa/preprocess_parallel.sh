@@ -16,7 +16,7 @@ do
     echo "Truecasing"
     $MOSES/scripts/recaser/truecase.perl -model $EN_TC_MODEL/truecase-model.en < $EN_DATA/$f.tok > $EN_DATA/$f.tc
     echo "Applying BPE"
-    $SCRIPTS_DIR/apply_bpe.py -c $OUTPUT_DIR/en.bpe.model < $EN_DATA/$f.tc > $OUTPUT_DIR/$f.bpe.en
+    $APPLY_BPE -c $OUTPUT_DIR/en.bpe.model < $EN_DATA/$f.tc > $OUTPUT_DIR/$f.bpe.en
 done
 
 # Same for Farsi
@@ -31,5 +31,5 @@ do
     echo "Tokenising and normalising"
     python fa_preprocessing.py $FA_DATA/$f > $FA_DATA/$f.tok
     echo "Applying BPE"
-    $SCRIPTS_DIR/apply_bpe.py -c $OUTPUT_DIR/fa.bpe.model < $FA_DATA/$f.tok > $OUTPUT_DIR/$f.bpe.fa
+    $APPLY_BPE -c $OUTPUT_DIR/fa.bpe.model < $FA_DATA/$f.tok > $OUTPUT_DIR/$f.bpe.fa
 done
