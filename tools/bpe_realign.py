@@ -16,7 +16,7 @@ Last Modified: July 31, 2017
 This script takes 
   (a) a BPE-ified corpus text file and 
   (b) a line-by-line collection of graph edges 
-and realigns the graph edges
+and realigns and renames the graph edges.
 
 
 Example input:
@@ -24,7 +24,7 @@ BPE: every@@ body like@@ d the ott@@ er
 Edges: (1,0,ARG1) (1,3,ARG2)
 
 Example output (with options --outer first and --inner head): 
-  (2,0,ARG1) (2,5,ARG2) (0,1,BPE) (1,0,BPE-of) (2,3,BPE) (3,2,BPE-of) (5,6,BPE) (6,5,BPE-of)
+  (2,0,ARG1_FIRST) (2,5,ARG2_FIRST) (0,1,BPE_FIRST) (1,0,BPE_OF_FIRST) (2,3,BPE_FIRST) (3,2,BPE_OF_FIRST) (5,6,BPE_FIRST) (6,5,BPE_OF_FIRST)
   
 The possible options for --outer (i.e., the external edges between words) are:
   "first": The first BP in a word inherits its between-word edges
@@ -35,6 +35,8 @@ The possible options for --outer (i.e., the external edges between words) are:
 The possible options for --inner (i.e., the egdges within a word) are:
   "head": Every BP in a word is connected to the head of the word
   "neighbors" (default): Every BP in a word is connected to its left and right neighbors
+  
+These options can be combined with |, e.g. "first|last|all".
   
 '''
 
@@ -94,11 +96,16 @@ def parse_edges(edge_str, line_num=0):
     return results
     
    
-def align_outer(bpe_mapping, bpe_is_head, edges, line_num):
+def align_outer(bpe_mapping, bpe_is_head, edges, line_num, outer_strategy="all", inner_strategy="neighbors", self_strategy=False):
     ''' Changes the indices of word-to-word edges so that they're BP-to-BP edges instead '''
     new_edges = set()
     new_edge_labels = set()
     for origin, destination, label in edges:
+    
+        if label.upper() == "SELF":  # don't realign SELF edges!
+            continue
+            
+        new_label = label + "_" + outer_strategy.upper()
         if origin not in bpe_mapping:
             print("ERROR: Word index %s invalid on line %s" % (origin, line_num))
             continue
@@ -106,37 +113,51 @@ def align_outer(bpe_mapping, bpe_is_head, edges, line_num):
             print("ERROR: Word index %s invalid on line %s" % (destination, line_num))
             continue
         
-        new_edge_labels.add(label)
+        new_edge_labels.add(new_label)
         for new_origin in bpe_mapping[origin]:
             for new_destination in bpe_mapping[destination]:
                 if bpe_is_head[new_origin] and bpe_is_head[new_destination]:
-                    new_edges.add((new_origin, new_destination, label))
+                    new_edges.add((new_origin, new_destination, new_label))
     
     return new_edges, new_edge_labels
 
-def align_inner(bpe_mapping, bpe_is_head, inner_strategy="neighbors"):
+def align_inner(bpe_mapping, bpe_is_head, edges, line_num, outer_strategy="all", inner_strategy="neighbors", self_strategy=False):
     ''' Adds new BP-to-BP edges within a single word, in either a star ("head") or line ("neighbors") topology '''
     new_edges = set()
     if inner_strategy == 'head':
-        new_edge_labels = set(["BPE", "BPE-of"])
+        label = "BPE_" + outer_strategy.upper()
+        label_of = "BPE_OF_" + outer_strategy.upper()
+        new_edge_labels = set([label, label_of])
         for word_index, bpe_indices in bpe_mapping.items():
             for origin_bpe_index in bpe_indices:
-                if bpe_is_head[bpe_indices]:
+                if bpe_is_head[origin_bpe_index]:
                     for destination_bpe_index in bpe_mapping[word_index]:
                         if origin_bpe_index != destination_bpe_index:
-                            new_edges.add((origin_bpe_index, destination_bpe_index, "BPE"))
-                            new_edges.add((destination_bpe_index, origin_bpe_index, "BPE-of"))
+                            new_edges.add((origin_bpe_index, destination_bpe_index, label))
+                            new_edges.add((destination_bpe_index, origin_bpe_index, label_of))
     else:
-        new_edge_labels = set(["BPE-right", "BPE-left"])
+        label_left = "BPE_LEFT"
+        label_right = "BPE_RIGHT"
+        new_edge_labels = set([label_left, label_right])
         for word_index, bpe_indices in bpe_mapping.items():
             for origin_bpe_index, destination_bpe_index in zip(bpe_indices, bpe_indices[1:]):
-                new_edges.add((origin_bpe_index, destination_bpe_index, "BPE-right"))
-                new_edges.add((destination_bpe_index, origin_bpe_index, "BPE-left"))       
+                new_edges.add((origin_bpe_index, destination_bpe_index, label_right))
+                new_edges.add((destination_bpe_index, origin_bpe_index, label_left))       
                 
     return new_edges, new_edge_labels
 
+def align_self(bpe_mapping, bpe_is_head, edges, line_num, outer_strategy="all", inner_strategy="neighbors", self_strategy=False):
+    ''' Add SELF edges for each BP '''
+    new_edges = set()
+    new_edge_labels = set()
+    if self_strategy:
+        new_edge_labels = set(["SELF"])
+        for word_index, bpe_indices in bpe_mapping.items():
+            for bpe_index in bpe_indices:
+                new_edges.add((bpe_index, bpe_index, "SELF"))
+    return new_edges, new_edge_labels
         
-def process(bpe_filename, edges_filename, output_filename, output_map_filename, outer_strategy, inner_strategy):
+def process(bpe_filename, edges_filename, output_filename, output_map_filename, outer_strategies, inner_strategies, self_strategy):
     
     with open(bpe_filename, 'r', encoding="utf-8") as fin:
         bpe_lines = fin.readlines()
@@ -149,21 +170,26 @@ def process(bpe_filename, edges_filename, output_filename, output_map_filename, 
             (len(bpe_lines), len(edge_lines)))
         return
         
-    new_edge_labels = set()
+    edge_labels = set()
     with open(output_filename, 'w', encoding="utf-8") as fout:
         for i, (bpe_line, edge_line) in enumerate(zip(bpe_lines, edge_lines)):
-                    
-            bpe_mapping, bpe_is_head = determine_bpe_mapping(bpe_line, outer_strategy)
-            edges = parse_edges(edge_line, i)
-            new_outer_edges, new_outer_edge_labels = align_outer(bpe_mapping, bpe_is_head, edges, i)
-            new_inner_edges, new_inner_edge_labels = align_inner(bpe_mapping, bpe_is_head, inner_strategy)
-            new_edges = new_outer_edges | new_inner_edges
-            new_edge_labels.update(new_outer_edge_labels | new_inner_edge_labels)
-            new_edges_str = " ".join(("(%s,%s,%s)" % (o,d,l) for o,d,l in new_edges))
+            edges = set()
+            for outer_strategy in outer_strategies.split("|"):
+                for inner_strategy in inner_strategies.split("|"):
+                    bpe_mapping, bpe_is_head = determine_bpe_mapping(bpe_line, outer_strategy)
+                    old_edges = parse_edges(edge_line, i)
+                    for aligner in [align_outer, align_inner, align_self]:
+                        new_edges, new_edge_labels = aligner(bpe_mapping, bpe_is_head, 
+                                                                                old_edges, i, outer_strategy, 
+                                                                                inner_strategy, self_strategy)
+                        edges.update(new_edges)
+                        edge_labels.update(new_edge_labels)
+                   
+            new_edges_str = " ".join(("(%s,%s,%s)" % (o,d,l) for o,d,l in edges))
             fout.write(new_edges_str + "\n")
             
     with open(output_map_filename, 'w', encoding="utf-8") as fout:
-        results = {label:i for i, label in enumerate(new_edge_labels)}
+        results = {label:i for i, label in enumerate(edge_labels)}
         fout.write(json.dumps(results, ensure_ascii=False, indent=2))
             
         
@@ -173,8 +199,11 @@ if __name__ == '__main__':
     argparser.add_argument("edges", help="Edge triples (source,dest,label)")
     argparser.add_argument("output", help="Output file for new edge triples (source,dest,label)")
     argparser.add_argument("output_map", help="Output file for the label->integer mapping")
-    argparser.add_argument("--outer", default="all", help="Which BPEs count as heads for realignment? (first, last, longest, all)")
-    argparser.add_argument("--inner", default="neighbors", help="Within a word, to what BPEs are each BPE connected? (head, neighbors)")
+    argparser.add_argument("--outer", default="all", help="Which BPEs count as heads for realignment? (first, last, longest, all; can select multiple like first|last)")
+    argparser.add_argument("--inner", default="neighbors", help="Within a word, to what BPEs are each BPE connected? (head, neighbors; can select both as head|neighbors)")
+    argparser.add_argument('--self', dest='self_edges', action='store_true', help="Whether SELF edges should be added for each BP")
+    argparser.add_argument('--no-self', dest='self_edges', action='store_false', help="'Now then, master Gotama, is there a self?' When this was said, the Blessed One was silent. 'Then is there no self?' The second time the Blessed One was silent.")
+    argparser.set_defaults(self_edges=False)
     args = argparser.parse_args() 
-    process(args.bpes, args.edges, args.output, args.output_map, args.outer, args.inner)
+    process(args.bpes, args.edges, args.output, args.output_map, args.outer, args.inner, args.self_edges)
     
